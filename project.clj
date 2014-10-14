@@ -1,4 +1,4 @@
-(defproject lively "0.1.0-SNAPSHOT"
+(defproject lively "0.1.0"
   :description "ClojureScript live coding with ease"
   :url "http://github.com/immoh/lively"
   :license {:name "Eclipse Public License"

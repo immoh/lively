@@ -28,10 +28,10 @@ This is a minimal example project showing [lively](http://github.com/immoh/livel
 
 3. **Start hacking**
 
-   Open your favorite editor and start editing ClojureScript files in [src/cljs](http://github.com/immoh/lively/blob/master/example/src/cljs). Your changes
+   Open your favorite editor and start editing ClojureScript files in [src/cljs](http://github.com/immoh/lively/blob/0.1.0/example/src/cljs). Your changes
    are automatically reflected in the browser with no need to reload the page!
 
-   For example, try editing the greeting text in [greet](http://github.com/immoh/lively/blob/master/example/src/cljs/hello/core.cljs#L5) function.
+   For example, try editing the greeting text in [greet](http://github.com/immoh/lively/blob/0.1.0/example/src/cljs/hello/core.cljs#L5) function.
    After saving the file, click on the greet button.
 
 

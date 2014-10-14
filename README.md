@@ -16,7 +16,7 @@ Lively does not provide web server for serving JavaScript files.
 Add the following Leiningen dependency:
 
 ```clojure
-[lively "0.1.0-SNAPSHOT"]
+[lively "0.1.0"]
 ```
 
 ## Usage
@@ -51,7 +51,7 @@ For example:
                               :on-reload (fn [] (.log js/console "Reloaded!")}
 ```
 
-Take a look at the [example project](http://github.com/immoh/lively/blob/master/example) to see it action.
+Take a look at the [example project](http://github.com/immoh/lively/blob/0.1.0/example) to see it action.
 
 
 ## How does it work?

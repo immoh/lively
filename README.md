@@ -2,7 +2,7 @@
 
 ClojureScript live coding with ease
 
-Lively is a client-side library for monitoring compiled JavaScript files for changes and reloading them when they
+Lively monitors compiled JavaScript files for changes and reloads them when they
 change, so that you don't have to. This creates a development environment where you can edit ClojureScript code and see the changes
 immediately in your browser without needing to refresh the page.
 

@@ -51,7 +51,7 @@ For example:
                               :on-reload    (fn [] (.log js/console "Reloaded!"))})
 ```
 
-Take a look at the [example project](http://github.com/immoh/lively/blob/0.1.0/example) to see it action.
+Take a look at the [example project](http://github.com/immoh/lively/blob/0.1.0/example) to see it in action.
 
 
 ## How does it work?

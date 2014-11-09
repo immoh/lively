@@ -32,7 +32,7 @@ Simply include call to `lively/start` somewhere in your ClojureScript codebase, 
 
 ```clojure
 (ns your.app
-  (:require lively)
+  (:require lively))
 
 (lively/start "/js/hello.js")
 ```

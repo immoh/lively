@@ -1,4 +1,4 @@
-(defproject hello "0.1.0-SNAPSHOT"
+(defproject hello "0.1.1-SNAPSHOT"
   :min-lein-version "2.0.0"
   :source-paths ["src/clj"]
   :dependencies [[org.clojure/clojure "1.6.0"]

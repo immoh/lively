@@ -66,7 +66,7 @@
 
 (defn check-optimization-level []
   (when-not (and js/goog (.-dependencies_ js/goog))
-    (throw (js/Error. "Lively requires that ClojureScript is compiled with :optimizations set to:none"))))
+    (throw (js/Error. "Lively requires that ClojureScript is compiled with :optimizations set to :none"))))
 
 (defn check-protocol []
   (when-not (= "http" (-> js/goog .-basePath goog.Uri/parse .getScheme))

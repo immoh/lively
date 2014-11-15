@@ -48,14 +48,26 @@
 (defn resolve-uri [rel]
   (.toString (goog.Uri/resolve (.-basePath js/goog) rel)))
 
-(defn get-reloadable-js-files []
-  (->> js/goog .-dependencies_ .-nameToPath js->clj
-       (remove (fn [[name _]]
-                 (or
-                   (#{"lively" "goog"} name)
-                   (some (partial goog.string/startsWith name) ["goog." "cljs." "clojure."]))))
-       (vals)
-       (map resolve-uri)))
+(defn has-unhandled-require? [remaining {:keys [requires]}]
+  (some (set (map :name remaining)) requires))
+
+(defn topo-sort [deps]
+  (loop [sorted [] remaining deps]
+    (if-let [next-deps (seq (remove (partial has-unhandled-require? remaining) remaining))]
+      (recur (concat sorted next-deps) (remove (set next-deps) remaining))
+      sorted)))
+
+(defn get-js-files-in-dependency-order []
+  (let [requires (-> js/goog .-dependencies_ .-requires js->clj)]
+    (->> js/goog .-dependencies_ .-nameToPath js->clj
+         (map (fn [[name path]] {:name name :path path :requires (keys (get requires path))}))
+         (remove (fn [{:keys [name]}]
+                   (or
+                     (#{"lively" "goog"} name)
+                     (some (partial goog.string/startsWith name) ["goog." "cljs." "clojure."]))))
+         (topo-sort)
+         (map :path)
+         (map resolve-uri))))
 
 ;; Thanks, lein-figwheel!
 (defn patch-goog-base []
@@ -92,14 +104,16 @@
      (check-protocol)
      (patch-goog-base)
      (go
-       (let [headers-cache (atom (let [uris (conj (get-reloadable-js-files) main-js-location)]
+       (let [headers-cache (atom (let [uris (conj (get-js-files-in-dependency-order) main-js-location)]
                                    (zipmap uris (map :headers (<! (<headers-for-uris uris))))))]
          (while true
            (let [{:keys [success? headers]} (<! (<headers main-js-location))]
              (when (and success? (headers-changed? headers-cache main-js-location headers))
                (<! (<reload-js-file main-js-location))
-               (let [uris (get-reloadable-js-files)]
-                 (doseq [[uri {:keys [success? headers]}] (zipmap uris (<! (<headers-for-uris uris)))
+               (let [uris (get-js-files-in-dependency-order)
+                     headers-for-uris (zipmap uris (<! (<headers-for-uris uris)))]
+                 (doseq [uri uris
+                         :let [{:keys [success? headers]} (get headers-for-uris uri)]
                          :when (and success? (headers-changed? headers-cache uri headers))]
                    (<! (<reload-js-file uri))))
                (when on-reload (on-reload))))

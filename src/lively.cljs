@@ -57,14 +57,17 @@
       (recur (concat sorted next-deps) (remove (set next-deps) remaining))
       sorted)))
 
+(defn reloadable-ns? [name]
+  (not
+    (or
+      (#{"lively" "goog"} name)
+      (some (partial goog.string/startsWith name) ["goog." "cljs." "clojure."]))))
+
 (defn get-js-files-in-dependency-order []
   (let [requires (-> js/goog .-dependencies_ .-requires js->clj)]
     (->> js/goog .-dependencies_ .-nameToPath js->clj
          (map (fn [[name path]] {:name name :path path :requires (keys (get requires path))}))
-         (remove (fn [{:keys [name]}]
-                   (or
-                     (#{"lively" "goog"} name)
-                     (some (partial goog.string/startsWith name) ["goog." "cljs." "clojure."]))))
+         (filter (comp reloadable-ns? :name))
          (topo-sort)
          (map :path)
          (map resolve-uri))))

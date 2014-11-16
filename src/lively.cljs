@@ -58,10 +58,7 @@
       sorted)))
 
 (defn reloadable-ns? [name]
-  (not
-    (or
-      (= "goog" name)
-      (some (partial goog.string/startsWith name) ["goog." "cljs." "clojure."]))))
+  (not (#{"goog" "cljs.core"} name)))
 
 (defn get-js-files-in-dependency-order []
   (let [requires (-> js/goog .-dependencies_ .-requires js->clj)]
@@ -113,6 +110,7 @@
            (let [{:keys [success? headers]} (<! (<headers main-js-location))]
              (when (and success? (headers-changed? headers-cache main-js-location headers))
                (<! (<reload-js-file main-js-location))
+               (<! (<reload-js-file (resolve-uri "deps.js")))
                (let [uris (get-js-files-in-dependency-order)
                      headers-for-uris (zipmap uris (<! (<headers-for-uris uris)))]
                  (doseq [uri uris

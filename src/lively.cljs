@@ -6,7 +6,7 @@
             goog.Uri)
   (:require-macros [cljs.core.async.macros :refer [go]]))
 
-(def initialized? (atom nil))
+(defonce initialized? (atom nil))
 
 (defn headers-changed? [cache uri headers]
   (when-not (= (get @cache uri) headers)
@@ -60,7 +60,7 @@
 (defn reloadable-ns? [name]
   (not
     (or
-      (#{"lively" "goog"} name)
+      (= "goog" name)
       (some (partial goog.string/startsWith name) ["goog." "cljs." "clojure."]))))
 
 (defn get-js-files-in-dependency-order []

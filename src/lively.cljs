@@ -57,17 +57,27 @@
       (recur (concat sorted next-deps) (remove (set next-deps) remaining))
       sorted)))
 
-(defn reloadable-ns? [name]
+(defn new-dependency? [headers-cache {:keys [uri]}]
+  (not (get headers-cache uri)))
+
+(defn loadable? [{:keys [name]}]
   (not (#{"goog" "cljs.core"} name)))
 
-(defn get-js-files-in-dependency-order []
+(defn reloadable? [{:keys [name] :as dependency}]
+  (and (loadable? dependency)
+       (not-any? (partial goog.string/startsWith name) ["goog." "cljs." "clojure."])))
+
+(defn get-js-files-in-dependency-order [headers-cache]
   (let [requires (-> js/goog .-dependencies_ .-requires js->clj)]
     (->> js/goog .-dependencies_ .-nameToPath js->clj
-         (map (fn [[name path]] {:name name :path path :requires (keys (get requires path))}))
-         (filter (comp reloadable-ns? :name))
+         (map (fn [[name path]]
+                {:name name :uri (resolve-uri path) :requires (keys (get requires path))}))
+         (filter (fn [dependency]
+                   (or (and (new-dependency? headers-cache dependency)
+                            (loadable? dependency))
+                       (reloadable? dependency))))
          (topo-sort)
-         (map :path)
-         (map resolve-uri))))
+         (map :uri))))
 
 ;; Thanks, lein-figwheel!
 (defn patch-goog-base []
@@ -104,14 +114,14 @@
      (check-protocol)
      (patch-goog-base)
      (go
-       (let [headers-cache (atom (let [uris (conj (get-js-files-in-dependency-order) main-js-location)]
+       (let [headers-cache (atom (let [uris (conj (get-js-files-in-dependency-order {}) main-js-location)]
                                    (zipmap uris (map :headers (<! (<headers-for-uris uris))))))]
          (while true
            (let [{:keys [success? headers]} (<! (<headers main-js-location))]
              (when (and success? (headers-changed? headers-cache main-js-location headers))
                (<! (<reload-js-file main-js-location))
                (<! (<reload-js-file (resolve-uri "deps.js")))
-               (let [uris (get-js-files-in-dependency-order)
+               (let [uris (get-js-files-in-dependency-order @headers-cache)
                      headers-for-uris (zipmap uris (<! (<headers-for-uris uris)))]
                  (doseq [uri uris
                          :let [{:keys [success? headers]} (get headers-for-uris uri)]

@@ -77,7 +77,8 @@
                             (loadable? dependency))
                        (reloadable? dependency))))
          (topo-sort)
-         (map :uri))))
+         (map :uri)
+         (distinct))))
 
 ;; Thanks, lein-figwheel!
 (defn patch-goog-base []

@@ -51,7 +51,10 @@ For example:
                               :on-reload    (fn [] (.log js/console "Reloaded!"))})
 ```
 
-Take a look at the [example project](http://github.com/immoh/lively/blob/0.1.0/example) to see it in action.
+## Examples
+
+* Minimalistic example project can be found in [example](https://github.com/immoh/lively/tree/master/example) directory.
+* [Lively Snake Demo](https://github.com/immoh/lively-snake-demo) showcases implementing a snake game using Lively
 
 
 ## How does it work?

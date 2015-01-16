@@ -1,4 +1,4 @@
-# Lively
+# Lively [![Build Status](https://travis-ci.org/immoh/lively.svg?branch=travis)](https://travis-ci.org/immoh/lively)
 
 ClojureScript live coding with ease
 

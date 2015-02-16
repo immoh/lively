@@ -121,7 +121,6 @@
            (let [{:keys [success? headers]} (<! (<headers main-js-location))]
              (when (and success? (headers-changed? headers-cache main-js-location headers))
                (<! (<reload-js-file main-js-location))
-               (<! (<reload-js-file (resolve-uri "deps.js")))
                (let [uris (get-js-files-in-dependency-order @headers-cache)
                      headers-for-uris (zipmap uris (<! (<headers-for-uris uris)))]
                  (doseq [uri uris

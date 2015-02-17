@@ -83,14 +83,11 @@
            {:name name :uri (resolve-uri path) :requires (set (keys (get requires path)))})
          (js->clj (.-nameToPath deps)))))
 
-(defn get-js-files-in-dependency-order []
+(defn get-reloadable-deps []
   (let [all-deps (get-all-deps)]
     (->> all-deps
          (filter reloadable?)
-         (expand-transitive-deps all-deps)
-         (topo-sort)
-         (map :uri)
-         (distinct))))
+         (expand-transitive-deps all-deps))))
 
 ;; Thanks, lein-figwheel!
 (defn patch-goog-base []
@@ -127,13 +124,17 @@
      (check-protocol)
      (patch-goog-base)
      (go
-       (let [headers-cache (atom (let [uris (conj (get-js-files-in-dependency-order) main-js-location)]
+       (let [headers-cache (atom (let [uris (conj (distinct (map :uri (get-reloadable-deps)))
+                                                  main-js-location)]
                                    (zipmap uris (map :headers (<! (<headers-for-uris uris))))))]
          (while true
            (let [{:keys [success? headers]} (<! (<headers main-js-location))]
              (when (and success? (headers-changed? headers-cache main-js-location headers))
                (<! (<reload-js-file main-js-location))
-               (let [uris (get-js-files-in-dependency-order)
+               (let [uris (->> (get-reloadable-deps)
+                               (topo-sort)
+                               (map :uri)
+                               (distinct))
                      headers-for-uris (zipmap uris (<! (<headers-for-uris uris)))]
                  (doseq [uri uris
                          :let [{:keys [success? headers]} (get headers-for-uris uri)]

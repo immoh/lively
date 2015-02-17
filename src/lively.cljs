@@ -57,17 +57,17 @@
       (recur (concat sorted next-deps) (remove (set next-deps) remaining))
       sorted)))
 
-(defn reloadable? [{:keys [name]}]
-  (and (not (#{"goog"
-               "cljs.core"
-               "an.existing.path"
-               "dup.base"
-               "far.out"
-               "ns"
-               "someprotopackage.TestPackageTypes"
-               "svgpan.SvgPan"
-               "testDep.bar"} name))
-       (not-any? (partial goog.string/startsWith name) ["goog." "cljs." "clojure." "fake." "proto2."])))
+(defn immutable? [{:keys [name]}]
+  (or (#{"goog"
+         "cljs.core"
+         "an.existing.path"
+         "dup.base"
+         "far.out"
+         "ns"
+         "someprotopackage.TestPackageTypes"
+         "svgpan.SvgPan"
+         "testDep.bar"} name)
+       (some (partial goog.string/startsWith name) ["goog." "cljs." "clojure." "fake." "proto2."])))
 
 (defn expand-transitive-deps [all-deps deps]
   (loop [deps (set deps)]
@@ -86,7 +86,7 @@
 (defn get-reloadable-deps []
   (let [all-deps (get-all-deps)]
     (->> all-deps
-         (filter reloadable?)
+         (remove immutable?)
          (expand-transitive-deps all-deps))))
 
 ;; Thanks, lein-figwheel!
@@ -124,14 +124,18 @@
      (check-protocol)
      (patch-goog-base)
      (go
-       (let [headers-cache (atom (let [uris (conj (distinct (map :uri (get-reloadable-deps)))
+       (let [deps (get-reloadable-deps)
+             headers-cache (atom (let [uris (conj (distinct (map :uri (remove immutable? deps)))
                                                   main-js-location)]
-                                   (zipmap uris (map :headers (<! (<headers-for-uris uris))))))]
+                                   (zipmap uris (map :headers (<! (<headers-for-uris uris))))))
+             loaded-cljs-deps (atom (set (map :name (filter immutable? deps))))]
          (while true
            (let [{:keys [success? headers]} (<! (<headers main-js-location))]
              (when (and success? (headers-changed? headers-cache main-js-location headers))
                (<! (<reload-js-file main-js-location))
-               (let [uris (->> (get-reloadable-deps)
+               (let [deps (get-reloadable-deps)
+                     uris (->> deps
+                               (remove (comp @loaded-cljs-deps :name))
                                (topo-sort)
                                (map :uri)
                                (distinct))
@@ -139,7 +143,8 @@
                  (doseq [uri uris
                          :let [{:keys [success? headers]} (get headers-for-uris uri)]
                          :when (and success? (headers-changed? headers-cache uri headers))]
-                   (<! (<reload-js-file uri))))
+                   (<! (<reload-js-file uri)))
+                 (swap! loaded-cljs-deps into (map :name (filter immutable? deps))))
                (when on-reload (on-reload))))
            (<! (timeout (or polling-rate 1000))))))
      nil)))

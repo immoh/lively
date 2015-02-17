@@ -57,25 +57,37 @@
       (recur (concat sorted next-deps) (remove (set next-deps) remaining))
       sorted)))
 
-(defn new-dependency? [headers-cache {:keys [uri]}]
-  (not (get headers-cache uri)))
+(defn reloadable? [{:keys [name]}]
+  (and (not (#{"goog"
+               "cljs.core"
+               "an.existing.path"
+               "dup.base"
+               "far.out"
+               "ns"
+               "someprotopackage.TestPackageTypes"
+               "svgpan.SvgPan"
+               "testDep.bar"} name))
+       (not-any? (partial goog.string/startsWith name) ["goog." "cljs." "clojure." "fake." "proto2."])))
 
-(defn loadable? [{:keys [name]}]
-  (not (#{"goog" "cljs.core"} name)))
+(defn expand-transitive-deps [all-deps deps]
+  (loop [deps (set deps)]
+    (let [expanded-deps (into deps (filter (comp (set (mapcat :requires deps)) :name) all-deps))]
+      (if (= deps expanded-deps)
+        deps
+        (recur expanded-deps)))))
 
-(defn reloadable? [{:keys [name] :as dependency}]
-  (and (loadable? dependency)
-       (not-any? (partial goog.string/startsWith name) ["goog." "cljs." "clojure."])))
+(defn get-all-deps []
+  (let [deps (.-dependencies_ js/goog)
+        requires (js->clj (.-requires deps))]
+    (map (fn [[name path]]
+           {:name name :uri (resolve-uri path) :requires (set (keys (get requires path)))})
+         (js->clj (.-nameToPath deps)))))
 
-(defn get-js-files-in-dependency-order [headers-cache]
-  (let [requires (-> js/goog .-dependencies_ .-requires js->clj)]
-    (->> js/goog .-dependencies_ .-nameToPath js->clj
-         (map (fn [[name path]]
-                {:name name :uri (resolve-uri path) :requires (keys (get requires path))}))
-         (filter (fn [dependency]
-                   (or (and (new-dependency? headers-cache dependency)
-                            (loadable? dependency))
-                       (reloadable? dependency))))
+(defn get-js-files-in-dependency-order []
+  (let [all-deps (get-all-deps)]
+    (->> all-deps
+         (filter reloadable?)
+         (expand-transitive-deps all-deps)
          (topo-sort)
          (map :uri)
          (distinct))))
@@ -115,13 +127,13 @@
      (check-protocol)
      (patch-goog-base)
      (go
-       (let [headers-cache (atom (let [uris (conj (get-js-files-in-dependency-order {}) main-js-location)]
+       (let [headers-cache (atom (let [uris (conj (get-js-files-in-dependency-order) main-js-location)]
                                    (zipmap uris (map :headers (<! (<headers-for-uris uris))))))]
          (while true
            (let [{:keys [success? headers]} (<! (<headers main-js-location))]
              (when (and success? (headers-changed? headers-cache main-js-location headers))
                (<! (<reload-js-file main-js-location))
-               (let [uris (get-js-files-in-dependency-order @headers-cache)
+               (let [uris (get-js-files-in-dependency-order)
                      headers-for-uris (zipmap uris (<! (<headers-for-uris uris)))]
                  (doseq [uri uris
                          :let [{:keys [success? headers]} (get headers-for-uris uri)]

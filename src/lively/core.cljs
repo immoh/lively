@@ -1,4 +1,4 @@
-(ns lively
+(ns lively.core
   (:require [cljs.core.async :as async :refer [<! >! chan close! timeout]]
             goog.net.jsloader
             goog.net.XhrIo

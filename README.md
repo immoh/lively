@@ -67,6 +67,6 @@ JavaScript file and reloads ones that have changed.
 
 ## License
 
-Copyright © 2014 Immo Heikkinen
+Copyright © 2014-2015 Immo Heikkinen
 
 Distributed under the Eclipse Public License, the same as Clojure.

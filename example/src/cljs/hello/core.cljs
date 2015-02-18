@@ -1,5 +1,5 @@
 (ns hello.core
-  (:require lively))
+  (:require [lively.core :as lively]))
 
 (defn greet []
   (js/alert "Hello!"))

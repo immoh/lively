@@ -124,7 +124,11 @@
      (check-protocol)
      (patch-goog-base)
      (go
-       (let [deps (get-reloadable-deps)
+       (let [cljs-deps-uri (resolve-uri  "../cljs_deps.js")
+             main-js-location (if (:success? (<! (<headers cljs-deps-uri)))
+                                cljs-deps-uri
+                                main-js-location)
+             deps (get-reloadable-deps)
              headers-cache (atom (let [uris (conj (distinct (map :uri (remove immutable? deps)))
                                                   main-js-location)]
                                    (zipmap uris (map :headers (<! (<headers-for-uris uris))))))

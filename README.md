@@ -16,7 +16,7 @@ Lively does not provide web server for serving JavaScript files.
 Add the following Leiningen dependency:
 
 ```clojure
-[lively "0.2.0"]
+[lively "0.2.1"]
 ```
 
 ## Usage
